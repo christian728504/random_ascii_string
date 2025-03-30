@@ -3,21 +3,21 @@ use clap::Parser;
 
 #[derive(Parser, Debug)]
 pub struct Args {
-    #[arg(long, default_value_t = 12)]
-    length: usize,
-    #[arg(long, default_value_t = true)]
+    #[arg(long, default_value_t = 12, value_parser = clap::value_parser!(u32).range(1..2_000_000))]
+    length: u32,
+    #[arg(short, long, default_value_t = false)]
     uppercase: bool,
-    #[arg(long, default_value_t = true)]
+    #[arg(short,long, default_value_t = false)]
     lowercase: bool,
-    #[arg(long, default_value_t = true)]
+    #[arg(short,long, default_value_t = false)]
     numbers: bool,
-    #[arg(long, default_value_t = true)]
+    #[arg(short, long, default_value_t = false)]
     symbols: bool,
 
 }
 
 impl Args {
-    pub fn new(length: usize, uppercase: bool, lowercase: bool, numbers: bool, symbols: bool) -> Self {
+    pub fn new(length: u32, uppercase: bool, lowercase: bool, numbers: bool, symbols: bool) -> Self {
         Self {
             length,
             uppercase,
@@ -30,16 +30,26 @@ impl Args {
 
 pub fn generate_random_ascii_string (options: &Args) -> String {
     let mut s: String = String::new();
-    let ascii_chars: Vec<char> = get_ascii_chars(options);
-    for _ in 0..options.length {
-        let idx: usize = rand::rng().random_range(..ascii_chars.len());
-        s.push(ascii_chars[idx]);
+    let result: Result<Vec<char>, &str> = get_ascii_chars(options);
+    if result.is_err() {
+        result.err().unwrap().to_string()
+    } else {
+        let ascii_chars: Vec<char> = result.unwrap();
+        for _ in 0..options.length {
+            let idx: usize = rand::rng().random_range(..ascii_chars.len());
+            s.push(ascii_chars[idx]);
+        };
+        s
     }
-    s
+    
+    
 }
 
-fn get_ascii_chars(options: &Args) -> Vec<char> {
+fn get_ascii_chars(options: &Args) -> Result<Vec<char>, &str> {
     let mut ascii_chars: Vec<char> = Vec::new();
+    if !(options.uppercase || options.lowercase || options.numbers || options.symbols) {
+        return Err("You must choose at least one character type. Run with --help for more info.");
+    }
     if options.uppercase {
         let uppercase: Vec<char> = (65..=90).map(|x| char::from_u32(x as u32).unwrap()).collect();
         ascii_chars.extend(uppercase);
@@ -56,6 +66,6 @@ fn get_ascii_chars(options: &Args) -> Vec<char> {
         let symbols: Vec<char> = vec!['!', '@', '#', '$', '%', '^', '&', '*'];
         ascii_chars.extend(symbols);
     }
-    ascii_chars
+    Ok(ascii_chars)
 }
         
