@@ -1,14 +1,18 @@
-use random_ascii_string::{generate_random_ascii_string, Args};
+use random_ascii_string::{generate_random_ascii_string, wait_for_specific_chars, Args};
 use clap::Parser;
-use std::time::Instant;
+use std::io::{self, Write};
 
 fn main() {
-    let start = Instant::now();
     let mut clipboard = clippers::Clipboard::get();
     let args = Args::parse();
-    let ascii_string = generate_random_ascii_string(&args);
-    println!("\n{}", ascii_string);
-    clipboard.write_text(ascii_string).unwrap();
-    let elapsed = start.elapsed();
-    println!("\nElapsed time: {:.2?}", elapsed);
+
+    let result: String = generate_random_ascii_string(&args);
+    clipboard.write_text(&result).unwrap();
+
+    print!("Random string saved to clipboard. Show the random string? (y/N): ");
+    io::stdout().flush().unwrap();
+    let choice = wait_for_specific_chars(&['y', 'Y', 'n', 'N', '\r']);
+    if choice == 'y' || choice == 'Y' {
+        println!("\n{}", result);
+    }
 }
